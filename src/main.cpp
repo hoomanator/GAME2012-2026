@@ -5,8 +5,8 @@
 
 struct Vertex
 {
-    Vector2 pos;   // offset of 0
-    Vector3 col;   // offset of 8 (4 bytes for pos.x + 4 bytes for pos.y = 8)
+    Vector2 pos;   // offset of 0 (4 bytes for pos.x + 4 bytes for pos.y = 8)
+    Vector3 col;   // offset of 8 and then (4 bytes for col.r + 4 bytes for color.g + 4 bytes for color.b = 12)
 };
 
 static const Vertex vertices_white[3] =
