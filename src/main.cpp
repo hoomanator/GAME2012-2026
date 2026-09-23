@@ -83,6 +83,49 @@ int main()
 
     glBindVertexArray(GL_NONE);
 
+    int object_index = 0;
+
+    GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+
+    /* Loop until the user closes the window */
+    while (!WindowShouldClose())
+    {
+        if (IsKeyPressed(KEY_ESCAPE))
+            SetWindowShouldClose(true);
+
+        // Colors are represented as fractions between 0.0 and 1.0, so convert using a colour-picker tool accordingly!
+        float r = 239.0f / 255.0f;
+        float g = 136.0f / 255.0f;
+        float b = 190.0f / 255.0f;
+        float a = 1.0f;
+
+        /* Render here */
+        glClearColor(r, g, b, a);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            ++object_index %= 5;
+        }
+
+        switch (object_index)
+        {
+        case 0:
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+            glBindVertexArray(vertex_array_white);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            break;
+
+        default:
+            break;
+        }
+
+        // Called at end of the frame to swap buffers and update input
+        Loop();
+    }
+
 
     return 0;
 }
