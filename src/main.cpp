@@ -29,3 +29,10 @@ static const Vector3 vertex_colors[3] =
     { 0.0f, 1.0f, 0.0f },
     { 0.0f, 0.0f, 1.0f }
 };
+
+int main()
+{
+    CreateWindow(800, 800, "Graphics 1");
+
+    return 0;
+}

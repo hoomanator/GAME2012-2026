@@ -39,4 +39,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\a1_triangle.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="assets\shaders\a1_triangle.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
