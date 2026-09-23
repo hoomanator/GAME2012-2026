@@ -1,80 +1,31 @@
-#include "glad/glad.h"
-#include "GLFW/glfw3.h"
-#include <iostream>
-#include <random>
+#include "Window.h"
+#include "Shader.h"
+#include "raymath.h"
+#include <cstddef>
 
-float RandomFloat(float min, float max)
+struct Vertex
 {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dis(min, max);
-    return dis(gen);
-}
+    Vector2 pos;   // offset of 0
+    Vector3 col;   // offset of 8 (4 bytes for pos.x + 4 bytes for pos.y = 8)
+};
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-
-int main(void)
+static const Vertex vertices_white[3] =
 {
+    { { -0.6f, -0.4f }, { 1.0f, 0.0f, 0.0f } },
+    { {  0.6f, -0.4f }, { 1.0f, 0.0f, 0.0f } },
+    { {   0.f,  0.6f }, { 1.0f, 0.0f, 0.0f } }
+};
 
-    constexpr int SCREEN_WIDTH = 800;
-    constexpr int SCREEN_HEIGHT = 600;
-
-    GLFWwindow* window;
-
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello OpenGL", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-
-    /* Load OpenGL 4.6*/
-    gladLoadGL();
-
-    glfwSetKeyCallback(window, key_callback);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glClearColor(0.49f, 0.29f, 0.19f, 1.0f);
-
-
-		float x = RandomFloat(0, SCREEN_WIDTH);
-		float y = RandomFloat(0, SCREEN_HEIGHT);
-
-        glfwSetCursorPos(window,x,y);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-    return 0;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static const Vector2 vertex_positions[3] =
 {
-	const char* getkeyname = glfwGetKeyName(key, scancode);
-    if (action == GLFW_PRESS) printf("%s\n", getkeyname);
-    
-    if (key == GLFW_KEY_E && action == GLFW_PRESS)
-		printf("%s\n", "E key pressed");
+    { -0.6f, -0.4f },
+    { 0.6f, -0.4f },
+    { 0.f,  0.6f }
+};
 
-    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-}
+static const Vector3 vertex_colors[3] =
+{
+    { 1.0f, 0.0f, 0.0f },
+    { 0.0f, 1.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f }
+};
