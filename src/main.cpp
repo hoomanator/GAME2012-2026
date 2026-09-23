@@ -117,6 +117,31 @@ int main()
             glBindVertexArray(vertex_array_white);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
+        case 1:
+            glPointSize(10);
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+            glBindVertexArray(vertex_array_white);
+            glDrawArrays(GL_POINTS, 0, 3);
+            break;
+        case 2:
+            glPointSize(10);
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+            glBindVertexArray(vertex_array_white);
+            glDrawArrays(GL_LINE_LOOP, 0, 3);
+            break;
+        case 3:
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 0.8, 0.8f, 0.8f);
+            glBindVertexArray(vertex_array_rainbow);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        case 4:
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 0.5, 0.5f, 0.5f);
+            glBindVertexArray(vertex_array_rainbow);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            break;
 
         default:
             break;
@@ -126,6 +151,17 @@ int main()
         Loop();
     }
 
+
+    glDeleteVertexArrays(1, &vertex_array_rainbow);
+    glDeleteVertexArrays(1, &vertex_array_white);
+    glDeleteBuffers(1, &vertex_buffer_rainbow_positions);
+    glDeleteBuffers(1, &vertex_buffer_rainbow_colors);
+    glDeleteBuffers(1, &vertex_buffer_white);
+    glDeleteProgram(a1_tri_shader);
+    glDeleteShader(a1_tri_frag);
+    glDeleteShader(a1_tri_vert);
+
+    DestroyWindow();
 
     return 0;
 }
