@@ -122,7 +122,7 @@ int main()
     bool obj_translate = false;
     bool obj_rotate = false;
     bool obj_scale = false;
-    int object_index = 1;
+    int object_index = 0;
 
     /* Loop until the user closes the window */
     while (!WindowShouldClose())
@@ -180,7 +180,7 @@ int main()
 
             // If we disable depth-testing, whichever triangle we draw last will be visible
             // (Meaning the green triangle will render "on top of" the red triangle despite being behind the red triangle)
-            //glDisable(GL_DEPTH_TEST);
+            glDisable(GL_DEPTH_TEST);
 
             // Red triangle (closer to the camera)
             world = MatrixTranslate(0.0f, 0.0f, 9.0f);
@@ -200,7 +200,7 @@ int main()
         case 1:
             // 1) Bind static resources such as shader (behaviour) and vertex array object (data)
             glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_white);
+            glBindVertexArray(vertex_array_rainbow);
 
             // 2) Bind dynamic resources such as uniforms
             glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
@@ -221,24 +221,74 @@ int main()
             break;
 
         case 3:
-            glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_white);
+        {
+            Matrix s = MatrixIdentity();
+            Matrix r = MatrixIdentity();
+            Matrix t = MatrixIdentity();
+           // Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
+           // Matrix proj = MatrixOrtho(-1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 100.0f);
 
-            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+            float time = Time();
+            float a = cosf(time) * 0.5 + 0.5f;
+            Vector3 A = { -1.0f, -1.0f, 0.0f };
+            Vector3 B = { 1.0f, 1.0f, 0.0f };
+            Vector3 C = Vector3Lerp(A, B, a);
+            t = MatrixTranslate(C.x, C.y, C.z);
+
+            world = s * r * t;
+            mvp = world * view * proj;
             glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
+            glUseProgram(a1_tri_shader);
+            glUniform3f(u_color, 0.8, 0.8f, 0.8f);
+            glBindVertexArray(vertex_array_rainbow);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
+        }
 
         case 4:
+        {
+            float time = Time();
+            float a = cosf(time) * 0.5 + 0.5f;
+
+            //Translation interpolation
+            Vector3 tA = { 0.0f, -10.0f, 0.0f };
+            Vector3 tB = { 0.0f, 10.0f, 0.0f };
+            Vector3 tC = Vector3Lerp(tA, tB, a);
+
+            //Scale interpolation
+            Vector3 sA = { 1.0f, 1.0f, 1.0f };
+            Vector3 sB = { 10.0f, 10.0f, 1.0f };
+            Vector3 sC = Vector3Lerp(sA, sB, a);
+
+            //Spherical Lerp because we interpolate between two quaternions (rotations) instead of two vectors (positions)
+            Quaternion qA = QuaternionIdentity();
+            Quaternion qB = QuaternionFromEuler(0.0f, 0.0f, 90.0f * DEG2RAD);
+            Quaternion qC = QuaternionSlerp(qA, qB, a);
+
+            Matrix s = MatrixScale(sC.x, sC.y, sC.z);
+            Matrix r = QuaternionToMatrix(qC);
+            Matrix t = MatrixTranslate(tC.x, tC.y, tC.z);
+
+            //Color interpolation
+            Vector3 cA = Vector3UnitY;  //Green
+            Vector3 cB = Vector3UnitZ; //Blue 
+            Vector3 cC = Vector3Lerp(cA, cB, a);
+
+
+
+            Matrix mvp = s * r * t * view * proj;
+
             glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_white);
-
             glUniform3f(u_color, 0.5, 0.5f, 0.5f);
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
+            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+            glUniform3f(u_color, cC.x, cC.y, cC.z);
+
+            glBindVertexArray(vertex_array_rainbow);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
+        }
         }
 
         // Write our widget code within begin/end gui loop!
