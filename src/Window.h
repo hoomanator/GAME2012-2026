@@ -3,15 +3,17 @@
 void CreateWindow(int width, int height, const char* title);
 void DestroyWindow();
 
-void SetWindowShouldClose(bool close);
-bool WindowShouldClose();
-
-void Loop();
-
 int WindowWidth();
 int WindowHeight();
 
+void SetWindowShouldClose(bool close);
+bool WindowShouldClose();
+
 float Time();
+void Loop();
+
+void BeginGui();
+void EndGui();
 
 bool IsKeyDown(int key);		// If a key is heald
 bool IsKeyUp(int key);			// If a key is released

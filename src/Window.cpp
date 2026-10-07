@@ -1,6 +1,11 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
+
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include "Window.h"
 #include <cassert>
 #include <iostream>
@@ -9,14 +14,14 @@
 struct App
 {
     GLFWwindow* window = nullptr;
-    int keysPrev[KEY_COUNT]{};
-    int keysCurr[KEY_COUNT]{};
-} gApp;
+    int keys_prev[KEY_COUNT]{};
+    int keys_curr[KEY_COUNT]{};
+} g_app;
 
 void KeyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_REPEAT) return;
-    gApp.keysCurr[key] = action;
+    g_app.keys_curr[key] = action;
 
     // Uncomment to see how key events work!
     //const char* name = glfwGetKeyName(key, scancode);
@@ -84,83 +89,118 @@ void CreateWindow(int width, int height, const char* title)
 #endif
 
     /* Create a windowed mode window and its OpenGL context */
-    gApp.window = glfwCreateWindow(width, height, title, NULL, NULL);
-    assert(gApp.window != nullptr);
+    g_app.window = glfwCreateWindow(width, height, title, NULL, NULL);
+    assert(g_app.window != nullptr);
 
     /* Make the window's context current */
-    glfwMakeContextCurrent(gApp.window);
+    glfwMakeContextCurrent(g_app.window);
 
     // Load OpenGL extensions
     assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
 
-    glfwSetKeyCallback(gApp.window, KeyboardCallback);
+    glfwSetKeyCallback(g_app.window, KeyboardCallback);
 #ifdef NDEBUG
 #else
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(DebugCallback, nullptr);
 #endif
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    //Note: GLFW joystick initialization may be incredibly *slow* if driver software like Razor Synapse *isn't* running
+    // Initialize dinput so imgui call doesn't hang on this mid-frame if we want gamepad support
+    if (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad)
+        glfwSetJoystickCallback(nullptr);
+
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(g_app.window, true);
+    ImGui_ImplOpenGL3_Init("#version 430");
+
+    // Initialize graphics pipeline state
+    glEnable(GL_DEPTH_TEST); // Enable depth-testing (occlude overlapping objects)
 }
 
 void SetWindowShouldClose(bool close)
 {
-    glfwSetWindowShouldClose(gApp.window, close ? GLFW_TRUE : GLFW_FALSE);
+    glfwSetWindowShouldClose(g_app.window, close ? GLFW_TRUE : GLFW_FALSE);
 }
 
 bool WindowShouldClose()
 {
-    return glfwWindowShouldClose(gApp.window);
+    return glfwWindowShouldClose(g_app.window);
+}
+
+float Time()
+{
+    return glfwGetTime();
 }
 
 void Loop()
 {
     // Last frame escape down
     // This frame escape up
-    memcpy(gApp.keysPrev, gApp.keysCurr, sizeof(int) * KEY_COUNT);
+    memcpy(g_app.keys_prev, g_app.keys_curr, sizeof(int) * KEY_COUNT);
 
     /* Swap front and back buffers */
-    glfwSwapBuffers(gApp.window);
+    glfwSwapBuffers(g_app.window);
 
     /* Poll for and process events */
     glfwPollEvents();
 }
 
+void BeginGui()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+void EndGui()
+{
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 bool IsKeyDown(int key)
 {
-    return gApp.keysCurr[key] == GLFW_PRESS;
+    return g_app.keys_curr[key] == GLFW_PRESS;
 }
 
 bool IsKeyUp(int key)
 {
-    return gApp.keysCurr[key] == GLFW_RELEASE;
+    return g_app.keys_curr[key] == GLFW_RELEASE;
 }
 
 bool IsKeyPressed(int key)
 {
     return
-        gApp.keysPrev[key] == GLFW_PRESS &&
-        gApp.keysCurr[key] == GLFW_RELEASE;
+        g_app.keys_prev[key] == GLFW_PRESS &&
+        g_app.keys_curr[key] == GLFW_RELEASE;
 }
 
 void DestroyWindow()
 {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
 }
 
 int WindowWidth()
 {
     int width, height;
-    glfwGetWindowSize(gApp.window, &width, &height);
+    glfwGetWindowSize(g_app.window, &width, &height);
     return width;
 }
 
 int WindowHeight()
 {
     int width, height;
-    glfwGetWindowSize(gApp.window, &width, &height);
+    glfwGetWindowSize(g_app.window, &width, &height);
     return height;
-}
-
-float Time()
-{
-    return glfwGetTime();
 }

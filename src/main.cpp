@@ -1,24 +1,33 @@
 #include "Window.h"
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui_impl_opengl3.h"
-#include <stdio.h>
 #include "Shader.h"
 #include "raymath.h"
+#include <imgui/imgui.h>
 #include <cstddef>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 
 struct Vertex
 {
-    Vector2 pos;   // offset of 0 (4 bytes for pos.x + 4 bytes for pos.y = 8)
-    Vector3 col;   // offset of 8 and then (4 bytes for col.r + 4 bytes for color.g + 4 bytes for color.b = 12)
+    Vector2 pos;   // offset of 0
+    Vector3 col;   // offset of 8 (4 bytes for pos.x + 4 bytes for pos.y = 8)
 };
 
+// Assignment 1 object 1 -- white triangle (change these vertex colours from red to white)!!!
 static const Vertex vertices_white[3] =
 {
     { { -0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
     { {  0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
     { {   0.f,  0.6f }, { 1.0f, 1.0f, 1.0f } }
 };
+
+// Assignment 1 object 2 -- rainbow triangle (done for you)
+//static const Vertex vertices_rainbow[3] =
+//{
+//    { { -0.6f, -0.4f }, { 1.0f, 0.0f, 0.0f } },
+//    { {  0.6f, -0.4f }, { 0.0f, 1.0f, 0.0f } },
+//    { {   0.f,  0.6f }, { 0.0f, 0.0f, 1.0f } }
+//};
 
 static const Vector2 vertex_positions[3] =
 {
@@ -34,9 +43,15 @@ static const Vector3 vertex_colors[3] =
     { 0.0f, 0.0f, 1.0f }
 };
 
+enum ProjectionType : int
+{
+    PROJ_ORTHOGRAPHIC,
+    PROJ_PERSPECTIVE
+};
+
 int main()
 {
-    CreateWindow(800, 800, "Week 4");
+    CreateWindow(800, 800, "Graphics 1");
 
     GLuint a1_tri_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
     GLuint a1_tri_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
@@ -87,22 +102,27 @@ int main()
 
     glBindVertexArray(GL_NONE);
 
-    int object_index = 0;
-
     GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
-
+    //GLint u_world = glGetUniformLocation(a1_tri_shader, "u_world");
     GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
 
+    // Note that we must cast to float to prevent truncation due to integer division
     float aspect = WindowWidth() / (float)WindowHeight();
+    float fov = 75.0f * DEG2RAD;
+
+    float left = -1.0f;
+    float right = 1.0f;
+    float bottom = -1.0f;
+    float top = 1.0f;
+
     float near = 0.01f;
     float far = 100.0f;
+    int proj_type = PROJ_PERSPECTIVE;
 
-    Matrix world = MatrixScale(5.0f, 5.0f, 1.0f) * MatrixRotateZ(0.0f * DEG2RAD) * MatrixTranslate(0.0, 0.0f, 5.0f);
-    Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
-    // Perspective = 3D projection (closer objects = bigger, farther objects = smaller)
-    Matrix proj = MatrixPerspective(75.0f * DEG2RAD, aspect, near, far);
-
-    Matrix mvp = world * view * proj;
+    bool obj_translate = false;
+    bool obj_rotate = false;
+    bool obj_scale = false;
+    int object_index = 1;
 
     /* Loop until the user closes the window */
     while (!WindowShouldClose())
@@ -119,161 +139,133 @@ int main()
         // Time in seconds since GLFW was initialized (use this with functions like sinf and cosf for repeating animations)
         float tt = Time();
 
+        Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
+
+        Matrix world = MatrixIdentity();
+        if (obj_scale)
+            world = world * MatrixScale(cosf(tt) * 0.4f + 0.5f, sinf(tt) * 0.4f + 0.5f, 1.0f);
+        if (obj_rotate)
+            world = world * MatrixRotateZ(tt * 100.0f * DEG2RAD);
+        if (obj_translate)
+            world = world * MatrixTranslate(cosf(tt), 0.0f, 0.0f);
+
+        Matrix proj = MatrixIdentity();
+        switch (proj_type)
+        {
+        case PROJ_ORTHOGRAPHIC:
+            proj = MatrixOrtho(left, right, bottom, top, near, far);
+            break;
+
+        case PROJ_PERSPECTIVE:
+            proj = MatrixPerspective(fov, aspect, near, far);
+            break;
+        }
+
         /* Render here */
         glClearColor(r, g, b, a);
-
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (IsKeyPressed(KEY_SPACE))
         {
             ++object_index %= 5;
         }
 
+        Matrix mvp = world * view * proj;
         switch (object_index)
         {
         case 0:
+            // Both triangles use the same vertex data and the same shader
             glUseProgram(a1_tri_shader);
+            glBindVertexArray(vertex_array_white);
 
-            world = MatrixScale(0.3f, 0.3f, 1.0f) * MatrixTranslate(0.5f, 0.5f, 9.0f);
+            // If we disable depth-testing, whichever triangle we draw last will be visible
+            // (Meaning the green triangle will render "on top of" the red triangle despite being behind the red triangle)
+            //glDisable(GL_DEPTH_TEST);
+
+            // Red triangle (closer to the camera)
+            world = MatrixTranslate(0.0f, 0.0f, 9.0f);
             mvp = world * view * proj;
-
             glUniform3f(u_color, 1.0f, 0.0f, 0.0f);
             glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glBindVertexArray(vertex_array_white);
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
-
-            world = MatrixScale(0.3f, 0.3f, 1.0f) * MatrixTranslate(-0.5f, 0.5f, 9.0f);
+            // Green triangle (further from the camera)
+            world = MatrixTranslate(0.0f, 0.0f, 5.0f);
             mvp = world * view * proj;
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
             glUniform3f(u_color, 0.0f, 1.0f, 0.0f);
-            glBindVertexArray(vertex_array_white);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-
-            world = MatrixScale(0.3f, 0.3f, 1.0f) * MatrixTranslate(-0.5f, -0.5f, 9.0f);
-            mvp = world * view * proj;
             glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glUniform3f(u_color, 0.0f, 0.0f, 1.0f);
-            glBindVertexArray(vertex_array_white);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-
-            world = MatrixScale(0.3f, 0.3f, 1.0f) * MatrixTranslate(0.5f, -0.5f, 9.0f);
-            mvp = world * view * proj;
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glUniform3f(u_color, 1.0f, 1.0f, 0.0f);
-            glBindVertexArray(vertex_array_white);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
 
         case 1:
-            glPointSize(10);            
-
+            // 1) Bind static resources such as shader (behaviour) and vertex array object (data)
             glUseProgram(a1_tri_shader);
+            glBindVertexArray(vertex_array_white);
 
-            world = MatrixIdentity();
-            mvp = world * view * proj;
+            // 2) Bind dynamic resources such as uniforms
+            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
             glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
-            glUniform3f(u_color, 1.0f, 0.0f, 1.0f);
-            glBindVertexArray(vertex_array_white);
-            glDrawArrays(GL_POINTS, 0, 3);
+            // 3) Tell GPU to render (draw call)
+            glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
 
         case 2:
-        {
-            glPointSize(10);
             glUseProgram(a1_tri_shader);
-
-            Matrix s = MatrixScale(5.0f, 5.0f, 1.0f);
-            Matrix r = MatrixRotateZ(tt * 100.f * DEG2RAD);
-            Matrix t = MatrixTranslate(0.0f, 0.0f, 0.0f);
-
-            world = s * r * t;
-            mvp = world * view * proj;
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+            glBindVertexArray(vertex_array_white);
 
             glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
-            glBindVertexArray(vertex_array_rainbow);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-        }
-        case 3:
-        {
-            Matrix s = MatrixIdentity();
-            Matrix r = MatrixIdentity();
-            Matrix t = MatrixIdentity();
-            Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
-            Matrix proj = MatrixOrtho(-1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 100.0f);
-
-            float time = Time();
-            float a = cosf(time) * 0.5 + 0.5f;
-            Vector3 A = { -1.0f, -1.0f, 0.0f };
-            Vector3 B = { 1.0f, 1.0f, 0.0f };
-            Vector3 C = Vector3Lerp(A, B, a);
-            t = MatrixTranslate(C.x, C.y, C.z);
-
-            world = s * r * t;
-            mvp = world * view * proj;
             glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
-            glUseProgram(a1_tri_shader);
-            glUniform3f(u_color, 0.8, 0.8f, 0.8f);
-            glBindVertexArray(vertex_array_rainbow);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
-        }
+
+        case 3:
+            glUseProgram(a1_tri_shader);
+            glBindVertexArray(vertex_array_white);
+
+            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            break;
+
         case 4:
-        {
-            Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
-            Matrix proj = MatrixOrtho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
-
-
-            float time = Time();
-            float a = cosf(time) * 0.5 + 0.5f;
-
-            //Translation interpolation
-            Vector3 tA = { 0.0f, -10.0f, 0.0f };
-            Vector3 tB = { 0.0f, 10.0f, 0.0f };
-            Vector3 tC = Vector3Lerp(tA, tB, a);
-
-            //Scale interpolation
-            Vector3 sA = { 1.0f, 1.0f, 1.0f };
-            Vector3 sB = { 10.0f, 10.0f, 1.0f };
-            Vector3 sC = Vector3Lerp(sA, sB, a);
-
-            //Spherical Lerp because we interpolate between two quaternions (rotations) instead of two vectors (positions)
-            Quaternion qA = QuaternionIdentity();
-            Quaternion qB = QuaternionFromEuler(0.0f, 0.0f, 90.0f * DEG2RAD);
-            Quaternion qC = QuaternionSlerp(qA, qB, a);
-
-            Matrix s = MatrixScale(sC.x, sC.y, sC.z);
-            Matrix r = QuaternionToMatrix(qC);
-            Matrix t = MatrixTranslate(tC.x, tC.y, tC.z);
-
-            //Color interpolation
-            Vector3 cA = Vector3UnitY;  //Green
-            Vector3 cB = Vector3UnitZ; //Blue 
-            Vector3 cC = Vector3Lerp(cA, cB, a);
-
-            Matrix mvp = s * r * t * view * proj;
-
             glUseProgram(a1_tri_shader);
+            glBindVertexArray(vertex_array_white);
 
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));            
-            glUniform3f(u_color, cC.x, cC.y, cC.z);
+            glUniform3f(u_color, 0.5, 0.5f, 0.5f);
+            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
-            glBindVertexArray(vertex_array_rainbow);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             break;
         }
-        default:
-            break;
-        }
+
+        // Write our widget code within begin/end gui loop!
+        BeginGui();
+        ImGui::RadioButton("Orthographic", &proj_type, PROJ_ORTHOGRAPHIC); ImGui::SameLine();
+        ImGui::RadioButton("Perspective", &proj_type, PROJ_PERSPECTIVE);
+
+        ImGui::Checkbox("Translate", &obj_translate);
+        ImGui::Checkbox("Rotate", &obj_rotate);
+        ImGui::Checkbox("Scale", &obj_scale);
+
+        ImGui::SliderFloat("Left", &left, -10.0f, 0.0f);
+        ImGui::SliderFloat("Right", &right, 0.0f, 10.0f);
+        ImGui::SliderFloat("Bottom", &bottom, -10.0f, 0.0f);
+        ImGui::SliderFloat("Top", &top, 0.0f, 10.0f);
+
+        ImGui::SliderAngle("FoV", &fov, 5.0f, 175.0f);
+        ImGui::SliderFloat("Near", &near, 0.001f, 1.0f);
+        ImGui::SliderFloat("Far", &far, 1.0f, 1000.0f);
+
+        // Extra practice: add additional widgets such sliders for camera position & camera direction!
+        //ImGui::ShowDemoWindow(nullptr);
+        EndGui();
 
         // Called at end of the frame to swap buffers and update input
         Loop();
     }
-
 
     glDeleteVertexArrays(1, &vertex_array_rainbow);
     glDeleteVertexArrays(1, &vertex_array_white);
@@ -285,6 +277,5 @@ int main()
     glDeleteShader(a1_tri_vert);
 
     DestroyWindow();
-
     return 0;
 }
