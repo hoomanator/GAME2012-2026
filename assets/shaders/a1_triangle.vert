@@ -1,16 +1,16 @@
-#version 330
-layout (location = 0) in vec2 vPos;
-layout (location = 1) in vec3 vCol;
-out vec3 color;
+#version 430 core
 
-uniform mat4 u_mvp;     // world * view * proj
+layout(location = 0) in vec3 vertex_position;
+layout(location = 1) in vec3 vertex_colour;
 
+out vec3 colour;
+
+uniform mat4 transform;
 
 void main()
 {
-    vec4 pos = vec4(vPos, 0.0, 1.0);
-
-    color = vCol;
-
-    gl_Position = u_mvp * pos;
+    colour = vertex_colour;
+    
+    vec4 pos = transform * vec4(vertex_position, 1.0);
+    gl_Position = pos;
 }

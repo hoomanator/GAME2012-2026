@@ -99,10 +99,27 @@ int main(void)
 
     GLuint vs_shader = LoadShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
     GLuint fs_shader = LoadShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
+    GLuint fs_white = LoadShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_white.frag");
+    GLuint fs_time = LoadShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_time.frag");
     GLuint shader_program = LoadProgram(vs_shader, fs_shader);
+    GLuint white_program = LoadProgram(vs_shader, fs_white);
+    GLuint time_program = LoadProgram(vs_shader, fs_time);
+
+    draw0.vao = triangle_vao;
+    draw0.shader = white_program;
 
     draw1.vao = triangle_vao;
     draw1.shader = shader_program;
+
+    draw2.vao = triangle_vao;
+    draw2.shader = time_program;
+
+    draw3.vao = triangle_vao;
+    draw3.shader = shader_program;
+
+    draw4.vao = triangle_vao;
+    draw4.shader = shader_program;
+
     // You will need to set draw0, draw2, draw3 and draw4's attributes accordingly!
 
     // Next week: loading shaders from an external file, and sending dynamic data (uniforms) to shaders!
@@ -111,35 +128,35 @@ int main(void)
     {
         switch (app.object_index)
         {
-            case 0:
-            {
-                DrawObject0(&app, draw0);
-                break;
-            }
+        case 0:
+        {
+            DrawObject0(&app, draw0);
+            break;
+        }
 
-            case 1:
-            {
-                DrawObject1(&app, draw1);
-                break;
-            }
+        case 1:
+        {
+            DrawObject1(&app, draw1);
+            break;
+        }
 
-            case 2:
-            {
-                DrawObject2(&app, draw2);
-                break;
-            }
+        case 2:
+        {
+            DrawObject2(&app, draw2);
+            break;
+        }
 
-            case 3:
-            {
-                DrawObject3(&app, draw3);
-                break;
-            }
+        case 3:
+        {
+            DrawObject3(&app, draw3);
+            break;
+        }
 
-            case 4:
-            {
-                DrawObject4(&app, draw4);
-                break;
-            }
+        case 4:
+        {
+            DrawObject4(&app, draw4);
+            break;
+        }
         }
 
         glfwSwapBuffers(window);
@@ -174,12 +191,15 @@ void DrawObject0(App* app, DrawCall draw)
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(draw.shader);
+    Matrix m = MatrixIdentity();
+    glUniformMatrix4fv(glGetUniformLocation(draw.shader, "transform"), 1, GL_FALSE, MatrixToFloat(m));
+
     glBindVertexArray(draw.vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 // 2) Rainbow triangle
-void DrawObject1(App * app, DrawCall draw)
+void DrawObject1(App* app, DrawCall draw)
 {
     assert(app->object_index == 1);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -195,37 +215,47 @@ void DrawObject1(App * app, DrawCall draw)
 }
 
 // 3) Triangle whose colour changes over time
-void DrawObject2(App * app, DrawCall draw)
+void DrawObject2(App* app, DrawCall draw)
 {
     assert(app->object_index == 2);
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(draw.shader);
+    Matrix m = MatrixIdentity();
+    glUniformMatrix4fv(glGetUniformLocation(draw.shader, "transform"), 1, GL_FALSE, MatrixToFloat(m));
+    glUniform1f(glGetUniformLocation(draw.shader, "time"), glfwGetTime()); // made a new fragment file for this in the assets folder
+
     glBindVertexArray(draw.vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 // 4) Triangle translating between x = -1 and x = +1 (doesn't need to start at x = -1)
-void DrawObject3(App * app, DrawCall draw)
+void DrawObject3(App* app, DrawCall draw)
 {
     assert(app->object_index == 3);
     glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(draw.shader);
+    Matrix m = MatrixTranslate(sinf(glfwGetTime()), 0.0f, 0.0f);
+    glUniformMatrix4fv(glGetUniformLocation(draw.shader, "transform"), 1, GL_FALSE, MatrixToFloat(m));
+
     glBindVertexArray(draw.vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 // 5) Triangle rotating continuously counter-clockwise about the z-axis
-void DrawObject4(App * app, DrawCall draw)
+void DrawObject4(App* app, DrawCall draw)
 {
     assert(app->object_index == 4);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(draw.shader);
+    Matrix m = MatrixRotateZ(glfwGetTime());
+    glUniformMatrix4fv(glGetUniformLocation(draw.shader, "transform"), 1, GL_FALSE, MatrixToFloat(m));
+
     glBindVertexArray(draw.vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
