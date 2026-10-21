@@ -101,6 +101,7 @@
     <ClInclude Include="inc\imgui\imstb_rectpack.h" />
     <ClInclude Include="inc\imgui\imstb_textedit.h" />
     <ClInclude Include="inc\imgui\imstb_truetype.h" />
+    <ClInclude Include="src\Buffer.h" />
     <ClInclude Include="src\raymath.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\Window.h" />
