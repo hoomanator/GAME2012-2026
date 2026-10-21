@@ -1,5 +1,7 @@
 #include "Window.h"
 #include "Shader.h"
+#include "Buffer.h"
+
 #include "raymath.h"
 #include <imgui/imgui.h>
 #include <cstddef>
@@ -15,31 +17,31 @@ constexpr int SCREEN_HEIGHT = 800;
 
 static const int line_vertex_count = 8;
 static const Vector2 line_vertex_positions[line_vertex_count]{
-    {-1.0f, -1.0f}, // bottom-left
-    {1.0f, -1.0f},  // bottom-right
+	{-1.0f, -1.0f}, // bottom-left
+	{1.0f, -1.0f},  // bottom-right
 
-    {1.0f, -1.0f}, // bottom-right
-    {1.0f, 1.0f},  // top-right
+	{1.0f, -1.0f}, // bottom-right
+	{1.0f, 1.0f},  // top-right
 
-    {1.0f, 1.0f},  // top-right
-    {-1.0f, 1.0f}, // top-left
+	{1.0f, 1.0f},  // top-right
+	{-1.0f, 1.0f}, // top-left
 
-    {-1.0f, 1.0f}, // top-left
-    {-1.0f, -1.0f} // bottom-left
+	{-1.0f, 1.0f}, // top-left
+	{-1.0f, -1.0f} // bottom-left
 };
 
 struct Vertex
 {
-    Vector2 pos;   // offset of 0
-    Vector3 col;   // offset of 8 (4 bytes for pos.x + 4 bytes for pos.y = 8)
+	Vector2 pos;   // offset of 0
+	Vector3 col;   // offset of 8 (4 bytes for pos.x + 4 bytes for pos.y = 8)
 };
 
 // Assignment 1 object 1 -- white triangle (change these vertex colours from red to white)!!!
 static const Vertex vertices_white[3] =
 {
-    { { -0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
-    { {  0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
-    { {   0.f,  0.6f }, { 1.0f, 1.0f, 1.0f } }
+	{ { -0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
+	{ {  0.6f, -0.4f }, { 1.0f, 1.0f, 1.0f } },
+	{ {   0.f,  0.6f }, { 1.0f, 1.0f, 1.0f } }
 };
 
 // Assignment 1 object 2 -- rainbow triangle (done for you)
@@ -52,16 +54,16 @@ static const Vertex vertices_white[3] =
 
 static const Vector2 vertex_positions[3] =
 {
-    { -0.6f, -0.4f },
-    { 0.6f, -0.4f },
-    { 0.f,  0.6f }
+	{ -0.6f, -0.4f },
+	{ 0.6f, -0.4f },
+	{ 0.f,  0.6f }
 };
 
 static const Vector3 vertex_colors[3] =
 {
-    { 1.0f, 0.0f, 0.0f },
-    { 0.0f, 1.0f, 0.0f },
-    { 0.0f, 0.0f, 1.0f }
+	{ 1.0f, 0.0f, 0.0f },
+	{ 0.0f, 1.0f, 0.0f },
+	{ 0.0f, 0.0f, 1.0f }
 };
 
 
@@ -70,313 +72,424 @@ static const int square_vertex_count = square_count * line_vertex_count;
 
 enum ProjectionType : int
 {
-    PERSPECTIVE = 0,
-    ORTHOGRAPHIC = 1
+	PERSPECTIVE = 0,
+	ORTHOGRAPHIC = 1
 };
 
 struct Line
 {
-    Vector2 start;
-    Vector2 end;
+	Vector2 start;
+	Vector2 end;
 };
 
 
 int main()
 {
 
-    // Calculates new vertices of nested squares based on the midpoints
-    Vector2 square_vertex_positions[square_vertex_count];
-    for (int i = 0; i < line_vertex_count; i++)
-        square_vertex_positions[i] = line_vertex_positions[i];
+	// Calculates new vertices of nested squares based on the midpoints
+	Vector2 square_vertex_positions[square_vertex_count];
+	for (int i = 0; i < line_vertex_count; i++)
+		square_vertex_positions[i] = line_vertex_positions[i];
 
-    for (int s = 1; s < square_count; s++)
-    {
-        const Vector2* prev = square_vertex_positions + (s - 1) * line_vertex_count;
-        Vector2* curr = square_vertex_positions + s * line_vertex_count;
-        for (int e = 0; e < 4; e++)
-        {
-            int next = (e + 1) % 4;
-            curr[e * 2 + 0] = Vector2Lerp(prev[e * 2], prev[e * 2 + 1], 0.5f);
-            curr[e * 2 + 1] = Vector2Lerp(prev[next * 2], prev[next * 2 + 1], 0.5f);
-        }
-    }
+	for (int s = 1; s < square_count; s++)
+	{
+		const Vector2* prev = square_vertex_positions + (s - 1) * line_vertex_count;
+		Vector2* curr = square_vertex_positions + s * line_vertex_count;
+		for (int e = 0; e < 4; e++)
+		{
+			int next = (e + 1) % 4;
+			curr[e * 2 + 0] = Vector2Lerp(prev[e * 2], prev[e * 2 + 1], 0.5f);
+			curr[e * 2 + 1] = Vector2Lerp(prev[next * 2], prev[next * 2 + 1], 0.5f);
+		}
+	}
 
 
-    CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 7");
+	CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 7");
 
-    GLuint a1_tri_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
-    GLuint a1_tri_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
-    GLuint a1_tri_shader = CreateProgram(a1_tri_vert, a1_tri_frag);
+	GLuint a1_tri_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
+	GLuint a1_tri_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
+	GLuint a1_tri_shader = CreateProgram(a1_tri_vert, a1_tri_frag);
 
-    GLuint vertex_buffer_rainbow_positions;
-    GLuint vertex_buffer_rainbow_colors;
-    glGenBuffers(1, &vertex_buffer_rainbow_positions);
-    glGenBuffers(1, &vertex_buffer_rainbow_colors);
+	GLuint vertex_buffer_rainbow_positions;
+	GLuint vertex_buffer_rainbow_colors;
+	glGenBuffers(1, &vertex_buffer_rainbow_positions);
+	glGenBuffers(1, &vertex_buffer_rainbow_colors);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_positions);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_positions), vertex_positions, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_colors);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_colors), vertex_colors, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-    // Can only have 1 vertex buffer bound at a time, so must unbind in order to prevent overwriting it
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_positions);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_positions), vertex_positions, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_colors);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_colors), vertex_colors, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+	// Can only have 1 vertex buffer bound at a time, so must unbind in order to prevent overwriting it
 
-    GLuint vertex_buffer_white;
-    glGenBuffers(1, &vertex_buffer_white);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_white);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_white), vertices_white, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+	GLuint vertex_buffer_white;
+	glGenBuffers(1, &vertex_buffer_white);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_white);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_white), vertices_white, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
-    GLuint vertex_array_rainbow;
-    glGenVertexArrays(1, &vertex_array_rainbow);
-    glBindVertexArray(vertex_array_rainbow);
+	GLuint vertex_array_rainbow;
+	glGenVertexArrays(1, &vertex_array_rainbow);
+	glBindVertexArray(vertex_array_rainbow);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_positions);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_positions);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_colors);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rainbow_colors);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);
 
-    glBindVertexArray(GL_NONE);
+	glBindVertexArray(GL_NONE);
 
-    GLuint vertex_array_white;
-    glGenVertexArrays(1, &vertex_array_white);
-    glBindVertexArray(vertex_array_white);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_white);
+	GLuint vertex_array_white;
+	glGenVertexArrays(1, &vertex_array_white);
+	glBindVertexArray(vertex_array_white);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_white);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, col));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, col));
 
-    glBindVertexArray(GL_NONE);
+	glBindVertexArray(GL_NONE);
 
-    GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
-    //GLint u_world = glGetUniformLocation(a1_tri_shader, "u_world");
-    GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
 
-    // Note that we must cast to float to prevent truncation due to integer division
-    float aspect = WindowWidth() / (float)WindowHeight();
-    float fov = 75.0f * DEG2RAD;
+	///////////////////////////////LINE SHADER //////////////////////////////
 
-    float left = -1.0f;
-    float right = 1.0f;
-    float bottom = -1.0f;
-    float top = 1.0f;
+	GLuint a2_lines_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a2_lines.vert");
+	GLuint a2_lines_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a2_lines.frag");
+	GLuint a2_lines_shader = CreateProgram(a2_lines_vert, a2_lines_frag);
 
-    float near = 0.01f;
-    float far = 100.0f;
-    int proj_type = PROJ_PERSPECTIVE;
+	GLuint vbo_line_positions = GenVertexBuffer();
+	BindVertexBuffer(vbo_line_positions);
+	UpdateVertexBuffer(vbo_line_positions, (void*)square_vertex_positions, sizeof(square_vertex_positions));
+	UnbindVertexBuffer();
 
-    bool obj_translate = false;
-    bool obj_rotate = false;
-    bool obj_scale = false;
-    int object_index = 0;
+	GLuint vao_line = GenVertexArray();
+	BindVertexArray(vao_line);
 
-    /* Loop until the user closes the window */
-    while (!WindowShouldClose())
-    {
-        if (IsKeyPressed(KEY_ESCAPE))
-            SetWindowShouldClose(true);
+	EnableVertexAttribute(0);
+	BindVertexBuffer(vbo_line_positions);
+	SetVertexAttribute(0, 2, GL_FLOAT, sizeof(Vector2));
 
-        // Colors are represented as fractions between 0.0 and 1.0, so convert using a colour-picker tool accordingly!
-        float r = 239.0f / 255.0f;
-        float g = 136.0f / 255.0f;
-        float b = 190.0f / 255.0f;
-        float a = 1.0f;
+	UnbindVertexArray();
+	UnbindVertexBuffer();
 
-        // Time in seconds since GLFW was initialized (use this with functions like sinf and cosf for repeating animations)
-        float tt = Time();
 
-        Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
+	//////////////////////// Render 1 line for every horizontal pixel ///////////////
 
-        Matrix world = MatrixIdentity();
-        if (obj_scale)
-            world = world * MatrixScale(cosf(tt) * 0.4f + 0.5f, sinf(tt) * 0.4f + 0.5f, 1.0f);
-        if (obj_rotate)
-            world = world * MatrixRotateZ(tt * 100.0f * DEG2RAD);
-        if (obj_translate)
-            world = world * MatrixTranslate(cosf(tt), 0.0f, 0.0f);
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> start_y(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> end_y(-1.0f, 1.0f);
 
-        Matrix proj = MatrixIdentity();
-        switch (proj_type)
-        {
-        case PROJ_ORTHOGRAPHIC:
-            proj = MatrixOrtho(left, right, bottom, top, near, far);
-            break;
+	std::vector<Line> lines(SCREEN_WIDTH);
+	for (int i = 0; i < SCREEN_WIDTH; i++)
+	{
+		Line& line = lines[i];
+		float x = Remap(i, 0, SCREEN_WIDTH, -1.0f, 1.0f);
+		line.start.x = lines[i].end.x = x;
 
-        case PROJ_PERSPECTIVE:
-            proj = MatrixPerspective(fov, aspect, near, far);
-            break;
-        }
+		lines[i].start.y = start_y(rng);
+		lines[i].end.y = end_y(rng);
+		printf("Line %d: start=(%f, %f), end=(%f, %f)\n", i, lines[i].start.x, lines[i].start.y, lines[i].end.x, lines[i].end.y);
+	}
 
-        /* Render here */
-        glClearColor(r, g, b, a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        if (IsKeyPressed(KEY_SPACE))
-        {
-            ++object_index %= 5;
-        }
-
-        Matrix mvp = world * view * proj;
-        switch (object_index)
-        {
-        case 0:
-            // Both triangles use the same vertex data and the same shader
-            glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_white);
-
-            // If we disable depth-testing, whichever triangle we draw last will be visible
-            // (Meaning the green triangle will render "on top of" the red triangle despite being behind the red triangle)
-            glDisable(GL_DEPTH_TEST);
-
-            // Red triangle (closer to the camera)
-            world = MatrixTranslate(0.0f, 0.0f, 9.0f);
-            mvp = world * view * proj;
-            glUniform3f(u_color, 1.0f, 0.0f, 0.0f);
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-
-            // Green triangle (further from the camera)
-            world = MatrixTranslate(0.0f, 0.0f, 5.0f);
-            mvp = world * view * proj;
-            glUniform3f(u_color, 0.0f, 1.0f, 0.0f);
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-
-        case 1:
-            // 1) Bind static resources such as shader (behaviour) and vertex array object (data)
-            glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_rainbow);
-
-            // 2) Bind dynamic resources such as uniforms
-            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-
-            // 3) Tell GPU to render (draw call)
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-
-        case 2:
-            glUseProgram(a1_tri_shader);
-            glBindVertexArray(vertex_array_white);
-
-            glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-
-        case 3:
-        {
-            Matrix s = MatrixIdentity();
-            Matrix r = MatrixIdentity();
-            Matrix t = MatrixIdentity();
-           // Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
-           // Matrix proj = MatrixOrtho(-1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 100.0f);
-
-            float time = Time();
-            float a = cosf(time) * 0.5 + 0.5f;
-            Vector3 A = { -1.0f, -1.0f, 0.0f };
-            Vector3 B = { 1.0f, 1.0f, 0.0f };
-            Vector3 C = Vector3Lerp(A, B, a);
-            t = MatrixTranslate(C.x, C.y, C.z);
-
-            world = s * r * t;
-            mvp = world * view * proj;
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-
-            glUseProgram(a1_tri_shader);
-            glUniform3f(u_color, 0.8, 0.8f, 0.8f);
-            glBindVertexArray(vertex_array_rainbow);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-        }
-
-        case 4:
-        {
-            float time = Time();
-            float a = cosf(time) * 0.5 + 0.5f;
-
-            //Translation interpolation
-            Vector3 tA = { 0.0f, -10.0f, 0.0f };
-            Vector3 tB = { 0.0f, 10.0f, 0.0f };
-            Vector3 tC = Vector3Lerp(tA, tB, a);
-
-            //Scale interpolation
-            Vector3 sA = { 1.0f, 1.0f, 1.0f };
-            Vector3 sB = { 10.0f, 10.0f, 1.0f };
-            Vector3 sC = Vector3Lerp(sA, sB, a);
-
-            //Spherical Lerp because we interpolate between two quaternions (rotations) instead of two vectors (positions)
-            Quaternion qA = QuaternionIdentity();
-            Quaternion qB = QuaternionFromEuler(0.0f, 0.0f, 90.0f * DEG2RAD);
-            Quaternion qC = QuaternionSlerp(qA, qB, a);
-
-            Matrix s = MatrixScale(sC.x, sC.y, sC.z);
-            Matrix r = QuaternionToMatrix(qC);
-            Matrix t = MatrixTranslate(tC.x, tC.y, tC.z);
-
-            //Color interpolation
-            Vector3 cA = Vector3UnitY;  //Green
-            Vector3 cB = Vector3UnitZ; //Blue 
-            Vector3 cC = Vector3Lerp(cA, cB, a);
+	/*std::vector<Vector3> linesColor(SCREEN_WIDTH);
+	for (int i = 0; i < SCREEN_WIDTH; i++)
+	{
+		linesColor[i] = Vector3{ 1.0f, 1.0f, 1.0f };
+	}*/
 
 
 
-            Matrix mvp = s * r * t * view * proj;
 
-            glUseProgram(a1_tri_shader);
-            glUniform3f(u_color, 0.5, 0.5f, 0.5f);
+	GLuint vbo_lines;
+	glGenBuffers(1, &vbo_lines);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_lines);
+	glBufferData(GL_ARRAY_BUFFER,  sizeof(Line) * SCREEN_WIDTH, lines.data(), GL_STATIC_DRAW);
 
-            glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-            glUniform3f(u_color, cC.x, cC.y, cC.z);
 
-            glBindVertexArray(vertex_array_rainbow);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            break;
-        }
-        }
+	/*GLuint cbo_lines;
+	glGenBuffers(1, &cbo_lines);
+	glBindBuffer(GL_ARRAY_BUFFER, cbo_lines);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(linesColor) * sizeof(Vector3) * SCREEN_WIDTH, linesColor.data(), GL_STATIC_DRAW);*/
 
-        // Write our widget code within begin/end gui loop!
-        BeginGui();
-        ImGui::RadioButton("Orthographic", &proj_type, PROJ_ORTHOGRAPHIC); ImGui::SameLine();
-        ImGui::RadioButton("Perspective", &proj_type, PROJ_PERSPECTIVE);
+	GLuint vao_multilines;
+	glGenVertexArrays(1, &vao_multilines);
+	glBindVertexArray(vao_multilines);
 
-        ImGui::Checkbox("Translate", &obj_translate);
-        ImGui::Checkbox("Rotate", &obj_rotate);
-        ImGui::Checkbox("Scale", &obj_scale);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_lines);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
 
-        ImGui::SliderFloat("Left", &left, -10.0f, 0.0f);
-        ImGui::SliderFloat("Right", &right, 0.0f, 10.0f);
-        ImGui::SliderFloat("Bottom", &bottom, -10.0f, 0.0f);
-        ImGui::SliderFloat("Top", &top, 0.0f, 10.0f);
+	/*glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, cbo_lines);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);*/
 
-        ImGui::SliderAngle("FoV", &fov, 5.0f, 175.0f);
-        ImGui::SliderFloat("Near", &near, 0.001f, 1.0f);
-        ImGui::SliderFloat("Far", &far, 1.0f, 1000.0f);
 
-        // Extra practice: add additional widgets such sliders for camera position & camera direction!
-        //ImGui::ShowDemoWindow(nullptr);
-        EndGui();
+	glBindVertexArray(GL_NONE);
+	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
-        // Called at end of the frame to swap buffers and update input
-        Loop();
-    }
+	////////////////////////////////////////////////////////////////////////////
 
-    glDeleteVertexArrays(1, &vertex_array_rainbow);
-    glDeleteVertexArrays(1, &vertex_array_white);
-    glDeleteBuffers(1, &vertex_buffer_rainbow_positions);
-    glDeleteBuffers(1, &vertex_buffer_rainbow_colors);
-    glDeleteBuffers(1, &vertex_buffer_white);
-    glDeleteProgram(a1_tri_shader);
-    glDeleteShader(a1_tri_frag);
-    glDeleteShader(a1_tri_vert);
 
-    DestroyWindow();
-    return 0;
+	int object_index = 0;
+	int projection_type = ORTHOGRAPHIC;
+
+	float aspect = (float)WindowWidth() / (float)WindowHeight();
+	float near = 0.1f;
+	float far = 100.0f;
+	float fov = 75.0f * DEG2RAD;
+
+	float left = -1.1;
+	float right = 1.1;
+	float bottom = -1.1;
+	float top = 1.1;
+
+	bool obj_translate = false;
+	bool obj_rotate = false;
+	bool obj_scale = false;
+
+	/* Loop until the user closes the window */
+	while (!WindowShouldClose())
+	{
+		if (IsKeyPressed(KEY_ESCAPE))
+			SetWindowShouldClose(true);
+
+		if (IsKeyPressed(KEY_SPACE))
+		{
+			++object_index %= 5;
+		}
+
+
+		// Colors are represented as fractions between 0.0 and 1.0, so convert using a colour-picker tool accordingly!
+		float r = 239.0f / 255.0f;
+		float g = 136.0f / 255.0f;
+		float b = 190.0f / 255.0f;
+		float a = 1.0f;
+
+		// Time in seconds since GLFW was initialized (use this with functions like sinf and cosf for repeating animations)
+
+		float tt = Time();
+
+		Matrix world = MatrixIdentity();
+
+		if (obj_translate)
+		{
+			world = MatrixTranslate(cosf(tt) * 0.4f + 0.5f, sin(tt) * 0.4f + 0.5f, 1.f);
+		}
+
+		if (obj_rotate)
+		{
+			world = MatrixRotateZ(tt * 100 * DEG2RAD);
+		}
+
+		if (obj_scale)
+		{
+			world = MatrixScale(cosf(tt) * 0.4f + 0.5f, cosf(tt) * 0.4f + 0.5f, 1.f);
+		}
+
+		Matrix view = MatrixLookAt({ 0.f, 0.f, 10.f }, { 0.f, 0.f, 0.f }, Vector3UnitY);
+
+		Matrix proj = MatrixIdentity();
+		switch (projection_type)
+		{
+		case PERSPECTIVE:
+			proj = MatrixPerspective(fov, aspect, near, far);
+			break;
+		case ORTHOGRAPHIC:
+			proj = MatrixOrtho(left, right, bottom, top, near, far);
+			break;
+		}
+
+		Matrix mvp = world * view * proj;
+
+		/* Render here */
+		glClearColor(r, g, b, a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+		switch (object_index)
+		{
+		case 0:
+			glLineWidth(15.0f);
+			BindVertexArray(vao_line);
+			BeginShader(a2_lines_shader);
+			{
+				SendMat4(mvp, "u_mvp");
+				SendVec3(Vector3UnitX, "u_color");
+				glDrawArrays(GL_LINES, 0, square_vertex_count);
+			}
+			EndShader();
+			UnbindVertexArray();
+			//glLineWidth(1.0f);
+			break;
+
+		case 1:
+		{
+			BindVertexArray(vao_multilines);
+			BeginShader(a1_tri_shader);
+			{
+				SendMat4(mvp, "u_mvp");
+				SendVec3(Vector3UnitX, "u_color");
+				glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
+			}
+			EndShader();
+			UnbindVertexArray();
+
+			//glUseProgram(a1_tri_shader);
+
+			//GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
+			//glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			//GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+			//glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+
+			//glBindVertexArray(vao_multilines);
+			//glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
+			//break;
+		}
+		case 2:
+		{
+			mvp = world * view * proj;
+
+
+			BindVertexArray(vertex_array_white);
+			BeginShader(a1_tri_shader);
+			{
+				SendMat4(mvp, "u_mvp");
+				SendVec3(Vector3UnitX, "u_color");
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+			EndShader();
+			UnbindVertexArray();
+
+			//glUseProgram(a1_tri_shader);
+									
+			//GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
+			//glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			//GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+			//glUniform3f(u_color, 0.0f, 1.0f, 0.0f);
+
+			//glBindVertexArray(vertex_array_white);
+			//glDrawArrays(GL_TRIANGLES, 0, 3);
+			break;
+		}
+		case 3:
+		{
+			Matrix s = MatrixIdentity();
+			Matrix r = MatrixIdentity();
+			Matrix t = MatrixIdentity();
+			// Matrix view = MatrixLookAt({ 0.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, Vector3UnitY);
+			// Matrix proj = MatrixOrtho(-1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 100.0f);
+
+			float time = Time();
+			float a = cosf(time) * 0.5 + 0.5f;
+			Vector3 A = { -1.0f, -1.0f, 0.0f };
+			Vector3 B = { 1.0f, 1.0f, 0.0f };
+			Vector3 C = Vector3Lerp(A, B, a);
+			t = MatrixTranslate(C.x, C.y, C.z);
+
+			GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+			GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
+
+			world = s * r * t;
+			mvp = world * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			glUseProgram(a1_tri_shader);
+			glUniform3f(u_color, 0.8, 0.8f, 0.8f);
+			glBindVertexArray(vertex_array_rainbow);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			break;
+		}
+
+		case 4:
+		{
+			GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+			GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
+
+			float time = Time();
+			float a = cosf(time) * 0.5 + 0.5f;
+
+			//Translation interpolation
+			Vector3 tA = { 0.0f, -10.0f, 0.0f };
+			Vector3 tB = { 0.0f, 10.0f, 0.0f };
+			Vector3 tC = Vector3Lerp(tA, tB, a);
+
+			//Scale interpolation
+			Vector3 sA = { 1.0f, 1.0f, 1.0f };
+			Vector3 sB = { 10.0f, 10.0f, 1.0f };
+			Vector3 sC = Vector3Lerp(sA, sB, a);
+
+			//Spherical Lerp because we interpolate between two quaternions (rotations) instead of two vectors (positions)
+			Quaternion qA = QuaternionIdentity();
+			Quaternion qB = QuaternionFromEuler(0.0f, 0.0f, 90.0f * DEG2RAD);
+			Quaternion qC = QuaternionSlerp(qA, qB, a);
+
+			Matrix s = MatrixScale(sC.x, sC.y, sC.z);
+			Matrix r = QuaternionToMatrix(qC);
+			Matrix t = MatrixTranslate(tC.x, tC.y, tC.z);
+
+			//Color interpolation
+			Vector3 cA = Vector3UnitY;  //Green
+			Vector3 cB = Vector3UnitZ; //Blue 
+			Vector3 cC = Vector3Lerp(cA, cB, a);
+
+
+
+			Matrix mvp = s * r * t * view * proj;
+
+			glUseProgram(a1_tri_shader);
+			glUniform3f(u_color, 0.5, 0.5f, 0.5f);
+
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+			glUniform3f(u_color, cC.x, cC.y, cC.z);
+
+			glBindVertexArray(vertex_array_rainbow);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			break;
+		}
+		}
+
+		// Write our widget code within begin/end gui loop!
+		BeginGui();
+		ImGui::RadioButton("Orthographic", &projection_type, PERSPECTIVE); ImGui::SameLine();
+		ImGui::RadioButton("Perspective", &projection_type, ORTHOGRAPHIC);
+
+		ImGui::Checkbox("Translate", &obj_translate);
+		ImGui::Checkbox("Rotate", &obj_rotate);
+		ImGui::Checkbox("Scale", &obj_scale);
+
+		ImGui::SliderFloat("Left", &left, -10.0f, 0.0f);
+		ImGui::SliderFloat("Right", &right, 0.0f, 10.0f);
+		ImGui::SliderFloat("Bottom", &bottom, -10.0f, 0.0f);
+		ImGui::SliderFloat("Top", &top, 0.0f, 10.0f);
+
+		ImGui::SliderAngle("FoV", &fov, 5.0f, 175.0f);
+		ImGui::SliderFloat("Near", &near, 0.001f, 1.0f);
+		ImGui::SliderFloat("Far", &far, 1.0f, 1000.0f);
+
+		// Extra practice: add additional widgets such sliders for camera position & camera direction!
+		//ImGui::ShowDemoWindow(nullptr);
+		EndGui();
+
+		// Called at end of the frame to swap buffers and update input
+		Loop();
+	}
+
+	glDeleteVertexArrays(1, &vertex_array_rainbow);
+	glDeleteVertexArrays(1, &vertex_array_white);
+	glDeleteBuffers(1, &vertex_buffer_rainbow_positions);
+	glDeleteBuffers(1, &vertex_buffer_rainbow_colors);
+	glDeleteBuffers(1, &vertex_buffer_white);
+	glDeleteProgram(a1_tri_shader);
+	glDeleteShader(a1_tri_frag);
+	glDeleteShader(a1_tri_vert);
+
+	DestroyWindow();
+	return 0;
 }
