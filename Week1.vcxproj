@@ -85,6 +85,7 @@
     <ClCompile Include="inc\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="inc\imgui\imgui_tables.cpp" />
     <ClCompile Include="inc\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Shader.cpp" />
