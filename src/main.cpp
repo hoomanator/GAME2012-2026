@@ -6,6 +6,27 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <random>
+
+constexpr int SCREEN_WIDTH = 800;
+constexpr int SCREEN_HEIGHT = 800;
+
+
+
+static const int line_vertex_count = 8;
+static const Vector2 line_vertex_positions[line_vertex_count]{
+    {-1.0f, -1.0f}, // bottom-left
+    {1.0f, -1.0f},  // bottom-right
+
+    {1.0f, -1.0f}, // bottom-right
+    {1.0f, 1.0f},  // top-right
+
+    {1.0f, 1.0f},  // top-right
+    {-1.0f, 1.0f}, // top-left
+
+    {-1.0f, 1.0f}, // top-left
+    {-1.0f, -1.0f} // bottom-left
+};
 
 struct Vertex
 {
@@ -43,15 +64,45 @@ static const Vector3 vertex_colors[3] =
     { 0.0f, 0.0f, 1.0f }
 };
 
+
+static const int square_count = 8;
+static const int square_vertex_count = square_count * line_vertex_count;
+
 enum ProjectionType : int
 {
-    PROJ_ORTHOGRAPHIC,
-    PROJ_PERSPECTIVE
+    PERSPECTIVE = 0,
+    ORTHOGRAPHIC = 1
 };
+
+struct Line
+{
+    Vector2 start;
+    Vector2 end;
+};
+
 
 int main()
 {
-    CreateWindow(800, 800, "Graphics 1");
+
+    // Calculates new vertices of nested squares based on the midpoints
+    Vector2 square_vertex_positions[square_vertex_count];
+    for (int i = 0; i < line_vertex_count; i++)
+        square_vertex_positions[i] = line_vertex_positions[i];
+
+    for (int s = 1; s < square_count; s++)
+    {
+        const Vector2* prev = square_vertex_positions + (s - 1) * line_vertex_count;
+        Vector2* curr = square_vertex_positions + s * line_vertex_count;
+        for (int e = 0; e < 4; e++)
+        {
+            int next = (e + 1) % 4;
+            curr[e * 2 + 0] = Vector2Lerp(prev[e * 2], prev[e * 2 + 1], 0.5f);
+            curr[e * 2 + 1] = Vector2Lerp(prev[next * 2], prev[next * 2 + 1], 0.5f);
+        }
+    }
+
+
+    CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 7");
 
     GLuint a1_tri_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
     GLuint a1_tri_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
