@@ -9,7 +9,8 @@ enum ShapeType
 	PLANE,
 	CUBE,
 	SPHERE,
-	KNOT
+	KNOT,
+	ROCK
 };
 
 struct Mesh

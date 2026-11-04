@@ -59,6 +59,16 @@ void CreateMesh(Mesh* mesh, const char* path)
 
 void CreateMesh(Mesh* mesh, ShapeType shape)
 {
+
+	const char* plant_program =
+		"X"
+		" X=F-[[X]+X]+F[+FX]-X"
+		" F=FF"
+		;
+
+	int slices = 6;      // Number of sides for the tubes/cylinders
+	int maxdepth = 4;    // Number of iterations/generations
+
 	// 1. Generate par_shapes_mesh
 	par_shapes_mesh* par = nullptr;
 	switch (shape)
@@ -78,6 +88,10 @@ void CreateMesh(Mesh* mesh, ShapeType shape)
 		//// Tessellate a trefoil knot; same arguments as par_shapes_create_torus.
 		///par_shapes_mesh* par_shapes_create_trefoil_knot(int slices, int stacks,  float radius);
 		par = par_shapes_create_trefoil_knot(20, 20, 2);
+		break;
+	case ROCK:
+		//par = par_shapes_create_rock(int seed, int nsubdivisions)
+		par = par_shapes_create_rock(5, 5);
 		break;
 
 	default:

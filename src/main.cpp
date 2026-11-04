@@ -222,6 +222,7 @@ int main()
 	std::mt19937 rng(std::random_device{}());
 	std::uniform_real_distribution<float> start_y(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> end_y(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> col_r(0.0f, 1.0f);
 
 	std::vector<Line> lines(SCREEN_WIDTH);
 	for (int i = 0; i < SCREEN_WIDTH; i++)
@@ -235,11 +236,11 @@ int main()
 		printf("Line %d: start=(%f, %f), end=(%f, %f)\n", i, lines[i].start.x, lines[i].start.y, lines[i].end.x, lines[i].end.y);
 	}
 
-	/*std::vector<Vector3> linesColor(SCREEN_WIDTH);
-	for (int i = 0; i < SCREEN_WIDTH; i++)
+	std::vector<Vector3> linesColor(SCREEN_WIDTH * 2);
+	for (int i = 0; i < SCREEN_WIDTH * 2; i++)
 	{
-		linesColor[i] = Vector3{ 1.0f, 1.0f, 1.0f };
-	}*/
+		linesColor[i] = Vector3{ col_r(rng), col_r(rng), col_r(rng) };
+	}
 
 
 
@@ -247,40 +248,41 @@ int main()
 	GLuint vbo_lines;
 	glGenBuffers(1, &vbo_lines);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_lines);
-	glBufferData(GL_ARRAY_BUFFER,  sizeof(Line) * SCREEN_WIDTH, lines.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(lines)  * SCREEN_WIDTH, lines.data(), GL_STATIC_DRAW);
 
 
-	/*GLuint cbo_lines;
+	GLuint cbo_lines;
 	glGenBuffers(1, &cbo_lines);
 	glBindBuffer(GL_ARRAY_BUFFER, cbo_lines);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(linesColor) * sizeof(Vector3) * SCREEN_WIDTH, linesColor.data(), GL_STATIC_DRAW);*/
+	glBufferData(GL_ARRAY_BUFFER, sizeof(linesColor)  * SCREEN_WIDTH, linesColor.data(), GL_STATIC_DRAW);
 
-	GLuint vao_multilines;
-	glGenVertexArrays(1, &vao_multilines);
-	glBindVertexArray(vao_multilines);
+
+	GLuint vao_lines;
+	glGenVertexArrays(1, &vao_lines);
+	glBindVertexArray(vao_lines);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_lines);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
 
-	/*glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, cbo_lines);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);*/
-
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);
 
 	glBindVertexArray(GL_NONE);
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
 	////////////////////////////////////////////////////////////////////////////
 
-		// Create Mesh
+	// Create Mesh
 	//An OBJ file stores the physical 3D geometry of a model (such as vertices, faces, normals, and UV coordinates), while an MTL (Material Template Library) file stores the appearance and surface properties (such as colors, shininess, transparency, and links to texture images)
 	//git add -f *.obj  (your gitignore file may be ignoring .obj files, so you may need to force add them to your repo)
-	Mesh shapeMesh, cubeMesh, sphereMesh, knotMesh, planeMesh, headMesh;
+	Mesh shapeMesh, cubeMesh, sphereMesh, knotMesh, planeMesh, headMesh, rockMesh;
 	CreateMesh(&shapeMesh, PLANE);
 	CreateMesh(&cubeMesh, CUBE);
 	CreateMesh(&sphereMesh, SPHERE);
 	CreateMesh(&knotMesh, KNOT);
+	CreateMesh(&rockMesh, ROCK);
 	CreateMesh(&planeMesh, "assets/meshes/plane.obj");
 	CreateMesh(&headMesh, "assets/meshes/head.obj");
 
@@ -322,7 +324,7 @@ int main()
 
 		if (IsKeyPressed(KEY_SPACE))
 		{
-			++object_index %= 6;
+			++object_index %= 10;
 		}
 
 
@@ -391,26 +393,13 @@ int main()
 
 		case 1:
 		{
-			BindVertexArray(vao_multilines);
-			BeginShader(a1_tri_shader);
-			{
-				SendMat4(mvp, "u_mvp");
-				SendVec3(Vector3UnitX, "u_color");
-				glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
-			}
-			EndShader();
-			UnbindVertexArray();
-
-			//glUseProgram(a1_tri_shader);
-
-			//GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
-			//glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-
-			//GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
-			//glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
-
-			//glBindVertexArray(vao_multilines);
-			//glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
+			glUseProgram(shaderLines);
+			GLint u_color = glGetUniformLocation(shaderLines, "u_color");
+			GLint u_mvp = glGetUniformLocation(shaderLines, "u_mvp");
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+			glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
+			glBindVertexArray(vao_lines);
+			glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
 			break;
 		}
 		case 2:
@@ -517,20 +506,65 @@ int main()
 		}
 		case 5:
 		{
-			glUseProgram(a1_tri_shader);
+			glUseProgram(shaderTcoords);
 
-			GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
-			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+			GLint u_mvp = glGetUniformLocation(shaderTcoords, "u_mvp");
+			Matrix world2 = MatrixRotateY(100.0f * tt * DEG2RAD);
+			Matrix mvp2 = world2 * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp2));
 
-			GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
-			glUniform3f(u_color, 0.0f, 1.0f, 0.0f);
-
-			glBindVertexArray(vertex_array_white);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			DrawMesh(shapeMesh);
+			break;
 
 		}
 
+		case 6:
+		{
+			glUseProgram(shaderNormals);
 
+			GLint u_mvp = glGetUniformLocation(shaderNormals, "u_mvp");
+			Matrix world2 = MatrixRotateY(100.0f * tt * DEG2RAD) * MatrixRotateX(100.0f * tt * DEG2RAD);
+			Matrix mvp2 = world2 * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp2));
+
+			DrawMesh(cubeMesh);
+			break;
+		}
+
+		case 7:
+		{
+			glUseProgram(shaderNormals);
+
+			GLint u_mvp = glGetUniformLocation(shaderNormals, "u_mvp");
+			Matrix world2 = MatrixRotateY(100.0f * tt * DEG2RAD);
+			Matrix mvp2 = world2 * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp2));
+
+			DrawMesh(headMesh);
+			break;
+		}
+
+		case 8:
+		{
+			glUseProgram(shaderNormals);
+
+			GLint u_mvp = glGetUniformLocation(shaderTcoords, "u_mvp");			
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			DrawMesh(knotMesh);
+			break;
+		}
+
+		case 9:
+		{
+			glUseProgram(shaderNormals);
+
+			GLint u_mvp = glGetUniformLocation(shaderTcoords, "u_mvp");
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			DrawMesh(rockMesh);
+			break;
+		}
 
 		}
 
