@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Shader.h"
 #include "Buffer.h"
+#include "Mesh.h"
 
 #include "raymath.h"
 #include <imgui/imgui.h>
@@ -104,11 +105,53 @@ int main()
 	}
 
 
-	CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 7");
+	CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 9");
+
+
+	//shaders
 
 	GLuint a1_tri_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a1_triangle.vert");
 	GLuint a1_tri_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a1_triangle.frag");
 	GLuint a1_tri_shader = CreateProgram(a1_tri_vert, a1_tri_frag);
+
+	///////////////////////////////LINE SHADER //////////////////////////////
+
+	GLuint a2_lines_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a2_lines.vert");
+	GLuint a2_lines_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a2_lines.frag");
+	GLuint a2_lines_shader = CreateProgram(a2_lines_vert, a2_lines_frag);
+
+	// Vertex shaders:
+	GLuint vs = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/default.vert");
+	GLuint vsLines = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/lines.vert");
+	GLuint vsVertexPositionColor = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/vertex_color.vert");
+	GLuint vsColorBufferColor = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/buffer_color.vert");
+
+	// Fragment shaders:
+	GLuint fsLines = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/lines.frag");
+	GLuint fsUniformColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/uniform_color.frag");
+	GLuint fsVertexColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/vertex_color.frag");
+	GLuint fsTcoords = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/tcoord_color.frag");
+	GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/normal_color.frag");
+
+	// Shader programs:
+	GLuint shaderUniformColor = CreateProgram(vs, fsUniformColor);
+	GLuint shaderVertexPositionColor = CreateProgram(vsVertexPositionColor, fsVertexColor);
+	GLuint shaderVertexBufferColor = CreateProgram(vsColorBufferColor, fsVertexColor);
+	GLuint shaderLines = CreateProgram(vsLines, fsLines);
+	GLuint shaderTcoords = CreateProgram(vs, fsTcoords);
+	GLuint shaderNormals = CreateProgram(vs, fsNormals);
+
+	// Add the triangle shaders
+	GLuint triangleVs = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/vertex_color.vert");
+	GLuint triangleFs = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/vertex_color.frag");
+	GLuint shaderTriangle = CreateProgram(triangleVs, triangleFs);
+
+	// Add point shader
+	GLuint vsPoints = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/points.vert");
+	GLuint shaderPoints = CreateProgram(vsPoints, fsVertexColor);
+
+
+
 
 	GLuint vertex_buffer_rainbow_positions;
 	GLuint vertex_buffer_rainbow_colors;
@@ -156,11 +199,7 @@ int main()
 	glBindVertexArray(GL_NONE);
 
 
-	///////////////////////////////LINE SHADER //////////////////////////////
 
-	GLuint a2_lines_vert = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/a2_lines.vert");
-	GLuint a2_lines_frag = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/a2_lines.frag");
-	GLuint a2_lines_shader = CreateProgram(a2_lines_vert, a2_lines_frag);
 
 	GLuint vbo_line_positions = GenVertexBuffer();
 	BindVertexBuffer(vbo_line_positions);
@@ -234,8 +273,31 @@ int main()
 
 	////////////////////////////////////////////////////////////////////////////
 
+		// Create Mesh
+	//An OBJ file stores the physical 3D geometry of a model (such as vertices, faces, normals, and UV coordinates), while an MTL (Material Template Library) file stores the appearance and surface properties (such as colors, shininess, transparency, and links to texture images)
+	//git add -f *.obj  (your gitignore file may be ignoring .obj files, so you may need to force add them to your repo)
+	Mesh shapeMesh, cubeMesh, sphereMesh, knotMesh, planeMesh, headMesh;
+	CreateMesh(&shapeMesh, PLANE);
+	CreateMesh(&cubeMesh, CUBE);
+	CreateMesh(&sphereMesh, SPHERE);
+	CreateMesh(&knotMesh, KNOT);
+	CreateMesh(&planeMesh, "assets/meshes/plane.obj");
+	CreateMesh(&headMesh, "assets/meshes/head.obj");
 
-	int object_index = 0;
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_PROGRAM_POINT_SIZE);
+	glEnable(GL_LINE_SMOOTH);
+
+
+
+
+
+
+	//////////////////////////////////////////////////////////////////////
+
+
+	int object_index = 5;
 	int projection_type = ORTHOGRAPHIC;
 
 	float aspect = (float)WindowWidth() / (float)WindowHeight();
@@ -260,7 +322,7 @@ int main()
 
 		if (IsKeyPressed(KEY_SPACE))
 		{
-			++object_index %= 5;
+			++object_index %= 6;
 		}
 
 
@@ -314,7 +376,7 @@ int main()
 		switch (object_index)
 		{
 		case 0:
-			glLineWidth(15.0f);
+			glLineWidth(5.0f);
 			BindVertexArray(vao_line);
 			BeginShader(a2_lines_shader);
 			{
@@ -349,7 +411,7 @@ int main()
 
 			//glBindVertexArray(vao_multilines);
 			//glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
-			//break;
+			break;
 		}
 		case 2:
 		{
@@ -453,6 +515,23 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 			break;
 		}
+		case 5:
+		{
+			glUseProgram(a1_tri_shader);
+
+			GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
+
+			GLint u_color = glGetUniformLocation(a1_tri_shader, "u_color");
+			glUniform3f(u_color, 0.0f, 1.0f, 0.0f);
+
+			glBindVertexArray(vertex_array_white);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		}
+
+
+
 		}
 
 		// Write our widget code within begin/end gui loop!

@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>./inc</AdditionalIncludeDirectories>
     </ClCompile>
@@ -104,6 +104,7 @@
     <ClInclude Include="inc\imgui\imstb_textedit.h" />
     <ClInclude Include="inc\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Buffer.h" />
+    <ClInclude Include="src\fast_obj.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\par_shapes.h" />
     <ClInclude Include="src\raymath.h" />
@@ -111,10 +112,23 @@
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\a1_time.frag" />
     <None Include="assets\shaders\a1_triangle.frag" />
     <None Include="assets\shaders\a1_triangle.vert" />
+    <None Include="assets\shaders\a1_white.frag" />
     <None Include="assets\shaders\a2_lines.frag" />
     <None Include="assets\shaders\a2_lines.vert" />
+    <None Include="assets\shaders\buffer_color.vert" />
+    <None Include="assets\shaders\default.vert" />
+    <None Include="assets\shaders\lines.frag" />
+    <None Include="assets\shaders\lines.vert" />
+    <None Include="assets\shaders\normal_color.frag" />
+    <None Include="assets\shaders\points.vert" />
+    <None Include="assets\shaders\tcoord_color.frag" />
+    <None Include="assets\shaders\texture_color.frag" />
+    <None Include="assets\shaders\uniform_color.frag" />
+    <None Include="assets\shaders\vertex_color.frag" />
+    <None Include="assets\shaders\vertex_color.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
