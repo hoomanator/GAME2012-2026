@@ -172,5 +172,8 @@
     <None Include="assets\shaders\a2_lines.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="assets\shaders\texturemix_color.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
