@@ -3,6 +3,9 @@
 #include "Buffer.h"
 #include "Mesh.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "raymath.h"
 #include <imgui/imgui.h>
 #include <cstddef>
@@ -105,7 +108,7 @@ int main()
 	}
 
 
-	CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 9");
+	CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Week 10 - Textures");
 
 
 	//shaders
@@ -132,6 +135,7 @@ int main()
 	GLuint fsVertexColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/vertex_color.frag");
 	GLuint fsTcoords = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/tcoord_color.frag");
 	GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/normal_color.frag");
+	GLuint fsTexture = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/texture_color.frag");
 
 	// Shader programs:
 	GLuint shaderUniformColor = CreateProgram(vs, fsUniformColor);
@@ -140,6 +144,7 @@ int main()
 	GLuint shaderLines = CreateProgram(vsLines, fsLines);
 	GLuint shaderTcoords = CreateProgram(vs, fsTcoords);
 	GLuint shaderNormals = CreateProgram(vs, fsNormals);
+	GLuint shaderTexture = CreateProgram(vs, fsTexture);
 
 	// Add the triangle shaders
 	GLuint triangleVs = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/vertex_color.vert");
@@ -219,7 +224,7 @@ int main()
 
 	//////////////////////// Render 1 line for every horizontal pixel ///////////////
 
-	std::mt19937 rng(std::random_device{}());
+	/*std::mt19937 rng(std::random_device{}());
 	std::uniform_real_distribution<float> start_y(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> end_y(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> col_r(0.0f, 1.0f);
@@ -248,13 +253,13 @@ int main()
 	GLuint vbo_lines;
 	glGenBuffers(1, &vbo_lines);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_lines);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(lines)  * SCREEN_WIDTH, lines.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(lines) * SCREEN_WIDTH, lines.data(), GL_STATIC_DRAW);
 
 
 	GLuint cbo_lines;
 	glGenBuffers(1, &cbo_lines);
 	glBindBuffer(GL_ARRAY_BUFFER, cbo_lines);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(linesColor)  * SCREEN_WIDTH, linesColor.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(linesColor) * SCREEN_WIDTH, linesColor.data(), GL_STATIC_DRAW);
 
 
 	GLuint vao_lines;
@@ -270,14 +275,49 @@ int main()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), 0);
 
 	glBindVertexArray(GL_NONE);
-	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);*/
+
+
+
+	////////////////////////////////// Texture /////////////////////////////////////////
+	  // Images store their top row first, but OpenGL expects the bottom row first (v = 0 is the bottom)
+	stbi_set_flip_vertically_on_load(true);
+
+	/// Create Car texture
+
+	int CarWidth = 0;
+	int CarHeight = 0;
+	int CarChannels = 0;
+	stbi_uc* pixelsCar = stbi_load("./assets/textures/ct4_grey.png", &CarWidth, &CarHeight, &CarChannels, 0);
+
+	GLuint carTexture = GL_NONE;
+	glGenTextures(1, &carTexture);
+	glBindTexture(GL_TEXTURE_2D, carTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CarWidth, CarHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsCar);
+	free(pixelsCar);
+	pixelsCar = nullptr;
+	///
+
+
+
+
+
+
+
+
+
+
 
 	////////////////////////////////////////////////////////////////////////////
 
 	// Create Mesh
 	//An OBJ file stores the physical 3D geometry of a model (such as vertices, faces, normals, and UV coordinates), while an MTL (Material Template Library) file stores the appearance and surface properties (such as colors, shininess, transparency, and links to texture images)
 	//git add -f *.obj  (your gitignore file may be ignoring .obj files, so you may need to force add them to your repo)
-	Mesh shapeMesh, cubeMesh, sphereMesh, knotMesh, planeMesh, headMesh, rockMesh;
+	Mesh shapeMesh, cubeMesh, sphereMesh, knotMesh, planeMesh, headMesh, rockMesh, carMesh;
 	CreateMesh(&shapeMesh, PLANE);
 	CreateMesh(&cubeMesh, CUBE);
 	CreateMesh(&sphereMesh, SPHERE);
@@ -285,6 +325,7 @@ int main()
 	CreateMesh(&rockMesh, ROCK);
 	CreateMesh(&planeMesh, "assets/meshes/plane.obj");
 	CreateMesh(&headMesh, "assets/meshes/head.obj");
+	CreateMesh(&carMesh, "assets/meshes/ct4.obj");
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -324,7 +365,7 @@ int main()
 
 		if (IsKeyPressed(KEY_SPACE))
 		{
-			++object_index %= 10;
+			++object_index %= 11;
 		}
 
 
@@ -393,13 +434,19 @@ int main()
 
 		case 1:
 		{
-			glUseProgram(shaderLines);
-			GLint u_color = glGetUniformLocation(shaderLines, "u_color");
-			GLint u_mvp = glGetUniformLocation(shaderLines, "u_mvp");
-			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
-			glUniform3f(u_color, 1.0f, 1.0f, 1.0f);
-			glBindVertexArray(vao_lines);
-			glDrawArrays(GL_LINES, 0, SCREEN_WIDTH * 2);
+			glUseProgram(shaderTexture);
+
+			GLint u_mvp = glGetUniformLocation(shaderTexture, "u_mvp");
+			Matrix world2 = MatrixRotateY(100.0f * tt * DEG2RAD);
+			Matrix mvp2 = world2 * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp2));
+
+			GLint u_tex = glGetUniformLocation(shaderTexture, "u_tex");
+			glUniform1i(u_tex, 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, carTexture);
+			DrawMesh(carMesh);
+
 			break;
 		}
 		case 2:
@@ -418,7 +465,7 @@ int main()
 			UnbindVertexArray();
 
 			//glUseProgram(a1_tri_shader);
-									
+
 			//GLint u_mvp = glGetUniformLocation(a1_tri_shader, "u_mvp");
 			//glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
@@ -548,7 +595,7 @@ int main()
 		{
 			glUseProgram(shaderNormals);
 
-			GLint u_mvp = glGetUniformLocation(shaderTcoords, "u_mvp");			
+			GLint u_mvp = glGetUniformLocation(shaderTcoords, "u_mvp");
 			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp));
 
 			DrawMesh(knotMesh);
@@ -565,6 +612,27 @@ int main()
 			DrawMesh(rockMesh);
 			break;
 		}
+		//Display a ct4 Nissan object with a texture
+		case 10:
+		{
+			glUseProgram(shaderTexture);
+			
+			GLint u_mvp = glGetUniformLocation(shaderTexture, "u_mvp");
+			Matrix world2 = MatrixRotateY(100.0f * tt * DEG2RAD);
+			Matrix mvp2 = world2 * view * proj;
+			glUniformMatrix4fv(u_mvp, 1, GL_FALSE, MatrixToFloat(mvp2));
+
+			GLint u_tex = glGetUniformLocation(shaderTexture, "u_tex");
+			glUniform1i(u_tex, 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, carTexture);
+			DrawMesh(carMesh);
+
+			break;
+		}
+
+		default:
+			break;
 
 		}
 

@@ -137,7 +137,6 @@ typedef struct
     unsigned int                face_count;
     unsigned int*               face_vertices;
     unsigned int*               face_materials;
-    unsigned char*              face_lines;
 
     /* Index data: one element for each face vertex */
     unsigned int                index_count;
@@ -735,7 +734,7 @@ const char* parse_normal(fastObjData* data, const char* ptr)
 
 
 static
-const char* parse_face(fastObjData* data, const char* ptr, unsigned char line)
+const char* parse_face(fastObjData* data, const char* ptr)
 {
     unsigned int count;
     fastObjIndex vn;
@@ -796,16 +795,6 @@ const char* parse_face(fastObjData* data, const char* ptr, unsigned char line)
 
     array_push(data->mesh->face_vertices, count);
     array_push(data->mesh->face_materials, data->material);
-
-    if (line || data->mesh->face_lines)
-    {
-        /* when line info exists, ensure it uses aligned indexing with other face data */
-        size_t skipped = array_size(data->mesh->face_vertices) - array_size(data->mesh->face_lines);
-        while (--skipped > 0)
-            array_push(data->mesh->face_lines, 0);
-
-        array_push(data->mesh->face_lines, line);
-    }
 
     data->group.face_count++;
     data->object.face_count++;
@@ -1306,22 +1295,7 @@ void parse_buffer(fastObjData* data, const char* ptr, const char* end, const fas
             {
             case ' ':
             case '\t':
-                p = parse_face(data, p, 0);
-                break;
-
-            default:
-                p--; /* roll p++ back in case *p was a newline */
-            }
-            break;
-
-        case 'l':
-            p++;
-
-            switch (*p++)
-            {
-            case ' ':
-            case '\t':
-                p = parse_face(data, p, 1);
+                p = parse_face(data, p);
                 break;
 
             default:
@@ -1424,7 +1398,6 @@ void fast_obj_destroy(fastObjMesh* m)
     array_clean(m->colors);
     array_clean(m->face_vertices);
     array_clean(m->face_materials);
-    array_clean(m->face_lines);
     array_clean(m->indices);
     array_clean(m->objects);
     array_clean(m->groups);
@@ -1481,7 +1454,6 @@ fastObjMesh* fast_obj_read_with_callbacks(const char* path, const fastObjCallbac
     m->colors         = 0;
     m->face_vertices  = 0;
     m->face_materials = 0;
-    m->face_lines     = 0;
     m->indices        = 0;
     m->materials      = 0;
     m->textures       = 0;

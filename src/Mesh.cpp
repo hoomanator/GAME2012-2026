@@ -17,7 +17,7 @@ void CreateMesh(Mesh* mesh, const char* path)
 	std::vector<fastObjIndex> indices(obj->index_count);
 	memcpy(indices.data(), obj->indices, indices.size() * sizeof(fastObjIndex));
 
-
+	
 	assert(obj->position_count > 1);
 	for (int i = 0; i < count; i++)
 	{
@@ -26,7 +26,7 @@ void CreateMesh(Mesh* mesh, const char* path)
 		Vector3 position = ((Vector3*)obj->positions)[idx.p];
 		mesh->positions[i] = position;
 	}
-
+	
 	assert(obj->normal_count > 1);
 	for (int i = 0; i < count; i++)
 	{
@@ -35,7 +35,7 @@ void CreateMesh(Mesh* mesh, const char* path)
 		Vector3 normal = ((Vector3*)obj->normals)[idx.n];
 		mesh->normals[i] = normal;
 	}
-
+	
 	if (obj->texcoord_count > 1)
 	{
 		mesh->tcoords.resize(count);
@@ -59,16 +59,6 @@ void CreateMesh(Mesh* mesh, const char* path)
 
 void CreateMesh(Mesh* mesh, ShapeType shape)
 {
-
-	const char* plant_program =
-		"X"
-		" X=F-[[X]+X]+F[+FX]-X"
-		" F=FF"
-		;
-
-	int slices = 6;      // Number of sides for the tubes/cylinders
-	int maxdepth = 4;    // Number of iterations/generations
-
 	// 1. Generate par_shapes_mesh
 	par_shapes_mesh* par = nullptr;
 	switch (shape)
@@ -98,7 +88,7 @@ void CreateMesh(Mesh* mesh, ShapeType shape)
 		assert(false && "Invalid shape type");
 		break;
 	}
-
+	
 	par_shapes_compute_normals(par);
 
 	// 2. Convert par_shapes_mesh to our Mesh representation
@@ -146,7 +136,7 @@ void Upload(Mesh* mesh)
 	vao = pbo = nbo = tbo = ebo = GL_NONE;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-
+	
 	glGenBuffers(1, &pbo);
 	glBindBuffer(GL_ARRAY_BUFFER, pbo);
 	glBufferData(GL_ARRAY_BUFFER, mesh->positions.size() * sizeof(Vector3), mesh->positions.data(), GL_STATIC_DRAW);
@@ -167,7 +157,7 @@ void Upload(Mesh* mesh)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), nullptr);
 		glEnableVertexAttribArray(2);
 	}
-
+	
 	if (!mesh->indices.empty())
 	{
 		glGenBuffers(1, &ebo);

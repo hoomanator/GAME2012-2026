@@ -12,6 +12,7 @@ bool WindowShouldClose();
 float Time();
 void Loop();
 
+// Wrap all ImGui widget calls between these each frame
 void BeginGui();
 void EndGui();
 
