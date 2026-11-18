@@ -11,12 +11,15 @@
 #include <iostream>
 #include <memory>
 
+
 struct App
 {
     GLFWwindow* window = nullptr;
     int keys_prev[KEY_COUNT]{};
     int keys_curr[KEY_COUNT]{};
 } g_app;
+
+//extern App gApp;
 
 void KeyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {

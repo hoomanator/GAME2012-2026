@@ -175,5 +175,8 @@
     <None Include="assets\shaders\texturemix_color.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="assets\shaders\skybox.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
