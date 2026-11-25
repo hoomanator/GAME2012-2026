@@ -8,6 +8,6 @@ out vec4 FragColor;
 
 void main()
 {
-    //FragColor = vec4(tcoord, 0.0, 1.0);
-    FragColor = texture(u_cubemap, position);
+    vec3 color = texture(u_cubemap, position).rgb;
+    FragColor = vec4(color, 1.0);
 }

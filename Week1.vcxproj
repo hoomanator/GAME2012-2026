@@ -126,6 +126,7 @@
     <None Include="assets\shaders\normal_color.frag" />
     <None Include="assets\shaders\points.vert" />
     <None Include="assets\shaders\skybox.frag" />
+    <None Include="assets\shaders\skybox.vert" />
     <None Include="assets\shaders\tcoord_color.frag" />
     <None Include="assets\shaders\texturemix_color.frag" />
     <None Include="assets\shaders\texture_color.frag" />

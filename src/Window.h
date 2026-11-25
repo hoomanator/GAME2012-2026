@@ -3,16 +3,15 @@
 void CreateWindow(int width, int height, const char* title);
 void DestroyWindow();
 
-int WindowWidth();
-int WindowHeight();
-
 void SetWindowShouldClose(bool close);
 bool WindowShouldClose();
 
-float Time();
 void Loop();
 
-// Wrap all ImGui widget calls between these each frame
+int WindowWidth();
+int WindowHeight();
+float Time();
+
 void BeginGui();
 void EndGui();
 
@@ -158,4 +157,3 @@ bool IsKeyPressed(int key);		// If a key is pressed (down then up)
 #define KEY_RIGHT_SUPER        347
 #define KEY_MENU               348
 #define KEY_COUNT              512
-
