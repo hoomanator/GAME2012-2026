@@ -181,5 +181,11 @@
     <None Include="assets\shaders\skybox.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="assets\shaders\phong2.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\phong.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
